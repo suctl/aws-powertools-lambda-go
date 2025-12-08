@@ -23,23 +23,23 @@ var LogMapper = map[string]zerolog.Level{
 }
 
 func NewConfig(logConfig LogConfig) *LogConfig {
-	if logConfig.writer == nil {
-		logConfig.writer = os.Stdout
+	if logConfig.Writer == nil {
+		logConfig.Writer = os.Stdout
 	}
-	if logConfig.logLevel == "" {
-		logConfig.logLevel = DEFAULT_LOG_LEVEL
+	if logConfig.LogLevel == "" {
+		logConfig.LogLevel = DEFAULT_LOG_LEVEL
 	}
-	logConfig.logLevel = strings.ToUpper(logConfig.logLevel)
+	logConfig.LogLevel = strings.ToUpper(logConfig.LogLevel)
 	return &logConfig
 }
 
 func New(logConfig LogConfig) *LambdaLogger {
 	config := NewConfig(logConfig)
-	zerolog.SetGlobalLevel(LogMapper[config.logLevel])
+	zerolog.SetGlobalLevel(LogMapper[config.LogLevel])
 	zerolog.CallerFieldName = CALLER_NAME
 	return &LambdaLogger{
 		logger: zerolog.
-			New(logConfig.writer).
+			New(logConfig.Writer).
 			With().
 			CallerWithSkipFrameCount(CALLER_SKIP_FRAME_COUNT).
 			Timestamp().

@@ -7,9 +7,8 @@ import (
 )
 
 type LogConfig struct {
-	logLevel       string
-	writer         io.Writer
-	inject_context bool
+	LogLevel string
+	Writer   io.Writer
 }
 
 type LambdaLogger struct {

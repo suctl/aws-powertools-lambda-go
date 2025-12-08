@@ -26,8 +26,7 @@ func TestLambdaLoggerWithCustomConfig(t *testing.T) {
 		}
 	}()
 	logger := New(LogConfig{
-		logLevel:       "INFO",
-		inject_context: true,
+		LogLevel: "INFO",
 	})
 	logger.Info("info log")
 	logger.Debug("debug log")
@@ -38,8 +37,8 @@ func TestLambdaLoggerWithCustomConfig(t *testing.T) {
 func TestLambdaLoggerWithLogLevelInfo(t *testing.T) {
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		logLevel: "INFO",
-		writer:   &buf,
+		LogLevel: "INFO",
+		Writer:   &buf,
 	})
 	logger.Info("info log")
 	logger.Debug("debug log")
@@ -53,8 +52,8 @@ func TestLambdaLoggerWithLogLevelInfo(t *testing.T) {
 func TestLambdaLoggerWithErrorLog(t *testing.T) {
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		logLevel: "INFO",
-		writer:   &buf,
+		LogLevel: "INFO",
+		Writer:   &buf,
 	})
 	logger.Error("error log")
 	output := buf.String()
@@ -69,8 +68,8 @@ func TestLambdaLoggerWithErrorLog(t *testing.T) {
 func TestLambdaLoggerWithWarnLog(t *testing.T) {
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		logLevel: "warn",
-		writer:   &buf,
+		LogLevel: "warn",
+		Writer:   &buf,
 	})
 	logger.Warn("warn log")
 	output := buf.String()
@@ -85,8 +84,8 @@ func TestLambdaLoggerWithWarnLog(t *testing.T) {
 func TestLambdaLoggerWithInfoLog(t *testing.T) {
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		logLevel: "INFO",
-		writer:   &buf,
+		LogLevel: "INFO",
+		Writer:   &buf,
 	})
 	logger.Info("info log")
 	output := buf.String()
@@ -101,8 +100,8 @@ func TestLambdaLoggerWithInfoLog(t *testing.T) {
 func TestLambdaLoggerWithDebugLog(t *testing.T) {
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		logLevel: "Debug",
-		writer:   &buf,
+		LogLevel: "Debug",
+		Writer:   &buf,
 	})
 	logger.Debug("debug log")
 	output := buf.String()
@@ -117,8 +116,8 @@ func TestLambdaLoggerWithDebugLog(t *testing.T) {
 func TestLambdaLoggerWithTraceLog(t *testing.T) {
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		logLevel: "trace",
-		writer:   &buf,
+		LogLevel: "trace",
+		Writer:   &buf,
 	})
 	logger.Trace("trace log")
 	output := buf.String()
