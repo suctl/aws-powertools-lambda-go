@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bhowmick-sumit/aws-powertools-lambda-go/internal/utils"
 	"github.com/rs/zerolog"
 )
 
@@ -22,30 +23,41 @@ var LogMapper = map[string]zerolog.Level{
 	"TRACE": zerolog.TraceLevel,
 }
 
+func setConfigFromEnvironment() {
+	logLevel := utils.GetEnvironmentVariable("POWERTOOLS_LOG_LEVEL", DEFAULT_LOG_LEVEL)
+	zerolog.SetGlobalLevel(LogMapper[strings.ToUpper(logLevel)])
+}
+
 func newConfig(logConfig *LogConfig) *LogConfig {
 	if logConfig.Writer == nil {
 		logConfig.Writer = os.Stdout
 	}
-	if logConfig.LogLevel == "" {
-		logConfig.LogLevel = DEFAULT_LOG_LEVEL
-	}
-	logConfig.LogLevel = strings.ToUpper(logConfig.LogLevel)
 	return logConfig
 }
 
 func New(logConfig LogConfig) *LambdaLogger {
+	setConfigFromEnvironment()
 	config := newConfig(&logConfig)
-	zerolog.SetGlobalLevel(LogMapper[config.LogLevel])
 	zerolog.CallerFieldName = CALLER_NAME
+	logger := zerolog.
+		New(config.Writer).
+		With().
+		CallerWithSkipFrameCount(CALLER_SKIP_FRAME_COUNT).
+		Timestamp().
+		Logger()
+
+	for key, value := range logConfig.Properties {
+		logger = logger.With().Str(key, value).Logger()
+	}
+
 	return &LambdaLogger{
-		logger: zerolog.
-			New(logConfig.Writer).
-			With().
-			CallerWithSkipFrameCount(CALLER_SKIP_FRAME_COUNT).
-			Timestamp().
-			Logger(),
+		logger: logger,
 	}
 }
+
+// func (log *LambdaLogger) addPropertie(key, value string) zerolog.Logger {
+// 	return log.logger.With().Str(key, value).Logger()
+// }
 
 func (log *LambdaLogger) Error(message string, args ...any) {
 	log.logger.Error().Msgf(message, args...)

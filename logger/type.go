@@ -7,8 +7,8 @@ import (
 )
 
 type LogConfig struct {
-	LogLevel string
-	Writer   io.Writer
+	Writer     io.Writer
+	Properties map[string]string
 }
 
 type LambdaLogger struct {

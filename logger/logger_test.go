@@ -9,22 +9,16 @@ import (
 
 func TestLoggerNewConfigWithDefaults(t *testing.T) {
 	config := newConfig(&LogConfig{})
-	if config.LogLevel != DEFAULT_LOG_LEVEL {
-		t.Errorf("expected default log level %s, got %s", DEFAULT_LOG_LEVEL, config.LogLevel)
-	}
 	if config.Writer != os.Stdout {
 		t.Errorf("expected default writer to be os.Stdout")
 	}
 }
 
 func TestLoggerNewConfigWithCustomProperties(t *testing.T) {
+	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
 	config := newConfig(&LogConfig{
-		LogLevel: "error",
-		Writer:   os.Stderr,
+		Writer: os.Stderr,
 	})
-	if config.LogLevel != "ERROR" {
-		t.Errorf("expected default log level %s, got %s", "ERROR", config.LogLevel)
-	}
 	if config.Writer != os.Stderr {
 		t.Errorf("expected default writer to be os.Stdout")
 	}
@@ -49,9 +43,8 @@ func TestLambdaLoggerWithCustomConfig(t *testing.T) {
 			t.Errorf("unexpected panic: %v", r)
 		}
 	}()
-	logger := New(LogConfig{
-		LogLevel: "INFO",
-	})
+	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
+	logger := New(LogConfig{})
 	logger.Info("info log")
 	logger.Debug("debug log")
 	logger.Trace("trace log")
@@ -59,10 +52,10 @@ func TestLambdaLoggerWithCustomConfig(t *testing.T) {
 }
 
 func TestLambdaLoggerWithLogLevelInfo(t *testing.T) {
+	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		LogLevel: "INFO",
-		Writer:   &buf,
+		Writer: &buf,
 	})
 	logger.Info("info log")
 	logger.Debug("debug log")
@@ -74,10 +67,10 @@ func TestLambdaLoggerWithLogLevelInfo(t *testing.T) {
 }
 
 func TestLambdaLoggerWithErrorLog(t *testing.T) {
+	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		LogLevel: "INFO",
-		Writer:   &buf,
+		Writer: &buf,
 	})
 	logger.Error("error log")
 	output := buf.String()
@@ -90,10 +83,10 @@ func TestLambdaLoggerWithErrorLog(t *testing.T) {
 }
 
 func TestLambdaLoggerWithWarnLog(t *testing.T) {
+	os.Setenv("POWERTOOLS_LOG_LEVEL", "WARN")
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		LogLevel: "warn",
-		Writer:   &buf,
+		Writer: &buf,
 	})
 	logger.Warn("warn log")
 	output := buf.String()
@@ -106,10 +99,10 @@ func TestLambdaLoggerWithWarnLog(t *testing.T) {
 }
 
 func TestLambdaLoggerWithInfoLog(t *testing.T) {
+	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		LogLevel: "INFO",
-		Writer:   &buf,
+		Writer: &buf,
 	})
 	logger.Info("info log")
 	output := buf.String()
@@ -122,10 +115,10 @@ func TestLambdaLoggerWithInfoLog(t *testing.T) {
 }
 
 func TestLambdaLoggerWithDebugLog(t *testing.T) {
+	os.Setenv("POWERTOOLS_LOG_LEVEL", "DEBUG")
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		LogLevel: "Debug",
-		Writer:   &buf,
+		Writer: &buf,
 	})
 	logger.Debug("debug log")
 	output := buf.String()
@@ -138,10 +131,10 @@ func TestLambdaLoggerWithDebugLog(t *testing.T) {
 }
 
 func TestLambdaLoggerWithTraceLog(t *testing.T) {
+	os.Setenv("POWERTOOLS_LOG_LEVEL", "TRACE")
 	var buf bytes.Buffer
 	logger := New(LogConfig{
-		LogLevel: "trace",
-		Writer:   &buf,
+		Writer: &buf,
 	})
 	logger.Trace("trace log")
 	output := buf.String()
@@ -150,5 +143,25 @@ func TestLambdaLoggerWithTraceLog(t *testing.T) {
 	}
 	if !strings.Contains(output, "\"level\":\"trace\"") {
 		t.Errorf("expected output to contain 'level': 'trace', got '%s'", output)
+	}
+}
+
+func TestLambdaLoggerWithProperties(t *testing.T) {
+	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
+	var buf bytes.Buffer
+	logger := New(LogConfig{
+		Writer: &buf,
+		Properties: map[string]string{
+			"name": "sumit",
+			"env":  "production",
+		},
+	})
+	logger.Info("info log with properties")
+	output := buf.String()
+	if !strings.Contains(output, "\"name\":\"sumit\"") {
+		t.Errorf("expected output to contain 'name': 'sumit', got '%s'", output)
+	}
+	if !strings.Contains(output, "\"env\":\"production\"") {
+		t.Errorf("expected output to contain 'env': 'production', got '%s'", output)
 	}
 }
