@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"strings"
 	"testing"
@@ -18,6 +19,9 @@ func TestLoggerNewConfigWithDefaults(t *testing.T) {
 
 func TestLoggerNewConfigWithCustomProperties(t *testing.T) {
 	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
+	defer func() {
+		os.Unsetenv("POWERTOOLS_LOG_LEVEL")
+	}()
 	config := newConfig(&types.LogConfig{
 		Writer: os.Stderr,
 	})
@@ -55,6 +59,9 @@ func TestLoggerWithCustomConfig(t *testing.T) {
 
 func TestLoggerWithLogLevelInfo(t *testing.T) {
 	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
+	defer func() {
+		os.Unsetenv("POWERTOOLS_LOG_LEVEL")
+	}()
 	var buf bytes.Buffer
 	logger := New(types.LogConfig{
 		Writer: &buf,
@@ -70,6 +77,9 @@ func TestLoggerWithLogLevelInfo(t *testing.T) {
 
 func TestLoggerWithErrorLog(t *testing.T) {
 	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
+	defer func() {
+		os.Unsetenv("POWERTOOLS_LOG_LEVEL")
+	}()
 	var buf bytes.Buffer
 	logger := New(types.LogConfig{
 		Writer: &buf,
@@ -86,6 +96,9 @@ func TestLoggerWithErrorLog(t *testing.T) {
 
 func TestLoggerWithWarnLog(t *testing.T) {
 	os.Setenv("POWERTOOLS_LOG_LEVEL", "WARN")
+	defer func() {
+		os.Unsetenv("POWERTOOLS_LOG_LEVEL")
+	}()
 	var buf bytes.Buffer
 	logger := New(types.LogConfig{
 		Writer: &buf,
@@ -102,6 +115,9 @@ func TestLoggerWithWarnLog(t *testing.T) {
 
 func TestLoggerWithInfoLog(t *testing.T) {
 	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
+	defer func() {
+		os.Unsetenv("POWERTOOLS_LOG_LEVEL")
+	}()
 	var buf bytes.Buffer
 	logger := New(types.LogConfig{
 		Writer: &buf,
@@ -118,6 +134,9 @@ func TestLoggerWithInfoLog(t *testing.T) {
 
 func TestLoggerWithDebugLog(t *testing.T) {
 	os.Setenv("POWERTOOLS_LOG_LEVEL", "DEBUG")
+	defer func() {
+		os.Unsetenv("POWERTOOLS_LOG_LEVEL")
+	}()
 	var buf bytes.Buffer
 	logger := New(types.LogConfig{
 		Writer: &buf,
@@ -134,6 +153,9 @@ func TestLoggerWithDebugLog(t *testing.T) {
 
 func TestLoggerWithTraceLog(t *testing.T) {
 	os.Setenv("POWERTOOLS_LOG_LEVEL", "TRACE")
+	defer func() {
+		os.Unsetenv("POWERTOOLS_LOG_LEVEL")
+	}()
 	var buf bytes.Buffer
 	logger := New(types.LogConfig{
 		Writer: &buf,
@@ -150,6 +172,9 @@ func TestLoggerWithTraceLog(t *testing.T) {
 
 func TestLoggerWithProperties(t *testing.T) {
 	os.Setenv("POWERTOOLS_LOG_LEVEL", "INFO")
+	defer func() {
+		os.Unsetenv("POWERTOOLS_LOG_LEVEL")
+	}()
 	var buf bytes.Buffer
 	logger := New(types.LogConfig{
 		Writer: &buf,
@@ -165,5 +190,82 @@ func TestLoggerWithProperties(t *testing.T) {
 	}
 	if !strings.Contains(output, "\"env\":\"production\"") {
 		t.Errorf("expected output to contain 'env': 'production', got '%s'", output)
+	}
+}
+
+func TestLoggerInjectContext(t *testing.T) {
+	os.Setenv("AWS_LAMBDA_FUNCTION_NAME", "test-function")
+	os.Setenv("AWS_LAMBDA_FUNCTION_INVOKED_ARN", "arn:aws:lambda:us-east-1:123456789012:function:test-function")
+	os.Setenv("AWS_LAMBDA_FUNCTION_MEMORY_SIZE", "128")
+
+	defer func() {
+		os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME")
+		os.Unsetenv("AWS_LAMBDA_FUNCTION_INVOKED_ARN")
+		os.Unsetenv("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")
+	}()
+
+	var buf bytes.Buffer
+	logger := New(types.LogConfig{
+		Writer: &buf,
+		Properties: map[string]string{
+			"service": "test-service",
+		},
+	})
+
+	ctx := context.WithValue(context.Background(), "function_request_id", "test-request-id")
+
+	logger.InjectContext(ctx)
+	logger.Info("info log with lambda context")
+
+	output := buf.String()
+	if !strings.Contains(output, "\"function_name\":\"test-function\"") {
+		t.Errorf("expected output to contain 'function_name': 'test-function', got '%s'", output)
+	}
+	if !strings.Contains(output, "\"function_memory_size\":\"128\"") {
+		t.Errorf("expected output to contain 'function_memory_size': '128', got '%s'", output)
+	}
+	if !strings.Contains(output, "\"function_arn\":\"arn:aws:lambda:us-east-1:123456789012:function:test-function\"") {
+		t.Errorf("expected output to contain correct 'function_arn', got '%s'", output)
+	}
+	if !strings.Contains(output, "\"function_request_id\":\"test-request-id\"") {
+		t.Errorf("expected output to contain 'function_request_id': 'test-request-id', got '%s'", output)
+	}
+	if !strings.Contains(output, "\"service\":\"test-service\"") {
+		t.Errorf("expected output to contain 'service': 'test-service', got '%s'", output)
+	}
+}
+
+func TestLoggerInjectContextWhenFailed(t *testing.T) {
+	defer func() {
+		os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME")
+		os.Unsetenv("AWS_LAMBDA_FUNCTION_INVOKED_ARN")
+		os.Unsetenv("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")
+	}()
+
+	var buf bytes.Buffer
+	logger := New(types.LogConfig{
+		Writer: &buf,
+		Properties: map[string]string{
+			"service": "test-service",
+		},
+	})
+
+	ctx := context.Background()
+
+	logger.InjectContext(ctx)
+	logger.Info("info log with lambda context")
+
+	output := buf.String()
+	if !strings.Contains(output, "\"function_request_id\":\"unknown\"") {
+		t.Errorf("expected output to contain 'function_request_id': 'unknown', got '%s'", output)
+	}
+	if !strings.Contains(output, "\"function_name\":\"unknown\"") {
+		t.Errorf("expected output to contain 'function_name': 'unknown', got '%s'", output)
+	}
+	if !strings.Contains(output, "\"function_memory_size\":\"0\"") {
+		t.Errorf("expected output to contain 'function_memory_size': '0', got '%s'", output)
+	}
+	if !strings.Contains(output, "\"service\":\"test-service\"") {
+		t.Errorf("expected output to contain 'service': 'test-service', got '%s'", output)
 	}
 }

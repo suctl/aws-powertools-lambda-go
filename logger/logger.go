@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -25,6 +26,28 @@ var LogMapper = map[string]zerolog.Level{
 
 type Logger struct {
 	logger zerolog.Logger
+}
+
+func (log *Logger) InjectContext(ctx context.Context) {
+	lambdaContext := newLambdaContext(ctx)
+	if lambdaContext.FunctionRequestId == "unknown" {
+		log.Warn("failed to load function request id")
+	}
+	if lambdaContext.FunctionARN == "" {
+		log.Warn("failed to load function arn")
+	}
+	if lambdaContext.FunctionName == "unknown" {
+		log.Warn("failed to load function name")
+	}
+	if lambdaContext.FunctionMemorySize == "0" {
+		log.Warn("failed to load function memory size")
+	}
+	log.logger = log.logger.With().
+		Str("function_name", lambdaContext.FunctionName).
+		Str("function_memory_size", lambdaContext.FunctionMemorySize).
+		Str("function_arn", lambdaContext.FunctionARN).
+		Str("function_request_id", lambdaContext.FunctionRequestId).
+		Logger()
 }
 
 func (log *Logger) Error(message string, args ...any) {
@@ -70,6 +93,20 @@ func New(logConfig types.LogConfig) *Logger {
 func setConfigFromEnvironment() {
 	logLevel := utils.GetEnvironmentVariable("POWERTOOLS_LOG_LEVEL", defaultLogLevel)
 	zerolog.SetGlobalLevel(LogMapper[strings.ToUpper(logLevel)])
+}
+
+func newLambdaContext(ctx context.Context) types.LambdaContext {
+	lambdaContext := types.LambdaContext{
+		FunctionName:       utils.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME", "unknown"),
+		FunctionMemorySize: utils.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_MEMORY_SIZE", "0"),
+		FunctionARN:        utils.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_INVOKED_ARN", ""),
+		FunctionRequestId:  "unknown",
+	}
+	functionRequestId := ctx.Value("function_request_id")
+	if functionRequestId != nil {
+		lambdaContext.FunctionRequestId = functionRequestId.(string)
+	}
+	return lambdaContext
 }
 
 func newConfig(logConfig *types.LogConfig) *types.LogConfig {

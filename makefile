@@ -1,5 +1,6 @@
 test:
-	go test -cover -v ./... 
+	go test --count=1 -v ./... 
 
-view-coverage:
-	go tool cover -html=cover.out
+coverage-report:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
