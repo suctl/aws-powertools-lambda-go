@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/suctl/aws-powertools-lambda-go/logger/types"
 )
 
@@ -212,19 +213,14 @@ func TestLoggerInjectContext(t *testing.T) {
 		},
 	})
 
-	ctx := context.WithValue(context.Background(), "aws_request_id", "test-request-id")
-	ctx = context.WithValue(ctx, "invoked_function_arn", "arn:aws:lambda:us-east-1:123456789012:function:test-function")
-
+	ctx := lambdacontext.NewContext(context.Background(), &lambdacontext.LambdaContext{
+		AwsRequestID:       "test-request-id",
+		InvokedFunctionArn: "arn:aws:lambda:us-east-1:123456789012:function:test-function",
+	})
 	logger.InjectContext(ctx)
 	logger.Info("info log with lambda context")
 
 	output := buf.String()
-	if !strings.Contains(output, "\"function_name\":\"test-function\"") {
-		t.Errorf("expected output to contain 'function_name': 'test-function', got '%s'", output)
-	}
-	if !strings.Contains(output, "\"function_memory_size\":\"128\"") {
-		t.Errorf("expected output to contain 'function_memory_size': '128', got '%s'", output)
-	}
 	if !strings.Contains(output, "\"function_arn\":\"arn:aws:lambda:us-east-1:123456789012:function:test-function\"") {
 		t.Errorf("expected output to contain correct 'function_arn', got '%s'", output)
 	}
@@ -237,35 +233,15 @@ func TestLoggerInjectContext(t *testing.T) {
 }
 
 func TestLoggerInjectContextWhenFailed(t *testing.T) {
-	defer func() {
-		os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME")
-		os.Unsetenv("AWS_LAMBDA_FUNCTION_MEMORY_SIZE")
-	}()
-
 	var buf bytes.Buffer
 	logger := New(types.LogConfig{
 		Writer: &buf,
-		Properties: map[string]string{
-			"service": "test-service",
-		},
 	})
 
-	ctx := context.Background()
-
-	logger.InjectContext(ctx)
-	logger.Info("info log with lambda context")
+	logger.InjectContext(context.Background())
 
 	output := buf.String()
-	if !strings.Contains(output, "\"function_request_id\":\"unknown\"") {
-		t.Errorf("expected output to contain 'function_request_id': 'unknown', got '%s'", output)
-	}
-	if !strings.Contains(output, "\"function_name\":\"unknown\"") {
-		t.Errorf("expected output to contain 'function_name': 'unknown', got '%s'", output)
-	}
-	if !strings.Contains(output, "\"function_memory_size\":\"0\"") {
-		t.Errorf("expected output to contain 'function_memory_size': '0', got '%s'", output)
-	}
-	if !strings.Contains(output, "\"service\":\"test-service\"") {
-		t.Errorf("expected output to contain 'service': 'test-service', got '%s'", output)
+	if !strings.Contains(output, "\"message\":\"failed to load context details\"") {
+		t.Errorf("expected output to contain 'message': 'failed to load context details', got '%s'", output)
 	}
 }

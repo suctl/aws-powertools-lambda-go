@@ -9,10 +9,3 @@ type LogConfig struct {
 	IncludeContext bool
 	Properties     map[string]string
 }
-
-type LambdaContext struct {
-	FunctionName       string
-	FunctionMemorySize string
-	FunctionARN        string
-	FunctionRequestId  string
-}

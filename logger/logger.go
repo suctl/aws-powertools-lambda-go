@@ -3,22 +3,19 @@ package logger
 import (
 	"context"
 	"os"
+	"strconv"
 	"strings"
 
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/rs/zerolog"
 	"github.com/suctl/aws-powertools-lambda-go/internal/utils"
 	"github.com/suctl/aws-powertools-lambda-go/logger/types"
 )
 
 const (
-	callerName                  = "location"
-	callerSkipFrameCount        = 3
-	defaultLogLevel             = "DEBUG"
-	functionArnContextKey       = "invoked_function_arn"
-	functionRequestIdContextKey = "aws_request_id"
-	functionNameEnvVar          = "AWS_LAMBDA_FUNCTION_NAME"
-	functionMemorySizeEnvVar    = "AWS_LAMBDA_FUNCTION_MEMORY_SIZE"
-	failedValue                 = "unknown"
+	callerName           = "location"
+	callerSkipFrameCount = 3
+	defaultLogLevel      = "DEBUG"
 )
 
 var LogMapper = map[string]zerolog.Level{
@@ -34,25 +31,17 @@ type Logger struct {
 }
 
 func (log *Logger) InjectContext(ctx context.Context) {
-	lambdaContext := newLambdaContext(ctx)
-	if lambdaContext.FunctionRequestId == failedValue {
-		log.Warn("failed to load function request id")
+	lc, ok := lambdacontext.FromContext(ctx)
+	if ok {
+		log.logger = log.logger.With().
+			Str("function_name", lambdacontext.FunctionName).
+			Str("function_memory_size", strconv.Itoa(lambdacontext.MemoryLimitInMB)).
+			Str("function_arn", lc.InvokedFunctionArn).
+			Str("function_request_id", lc.AwsRequestID).
+			Logger()
+		return
 	}
-	if lambdaContext.FunctionARN == failedValue {
-		log.Warn("failed to load function arn")
-	}
-	if lambdaContext.FunctionName == failedValue {
-		log.Warn("failed to load function name")
-	}
-	if lambdaContext.FunctionMemorySize == "0" {
-		log.Warn("failed to load function memory size")
-	}
-	log.logger = log.logger.With().
-		Str("function_name", lambdaContext.FunctionName).
-		Str("function_memory_size", lambdaContext.FunctionMemorySize).
-		Str("function_arn", lambdaContext.FunctionARN).
-		Str("function_request_id", lambdaContext.FunctionRequestId).
-		Logger()
+	log.Warn("failed to load context details")
 }
 
 func (log *Logger) Error(message string, args ...any) {
@@ -98,24 +87,6 @@ func New(logConfig types.LogConfig) *Logger {
 func setConfigFromEnvironment() {
 	logLevel := utils.GetEnvironmentVariable("POWERTOOLS_LOG_LEVEL", defaultLogLevel)
 	zerolog.SetGlobalLevel(LogMapper[strings.ToUpper(logLevel)])
-}
-
-func newLambdaContext(ctx context.Context) types.LambdaContext {
-	lambdaContext := types.LambdaContext{
-		FunctionName:       utils.GetEnvironmentVariable(functionNameEnvVar, failedValue),
-		FunctionMemorySize: utils.GetEnvironmentVariable(functionMemorySizeEnvVar, "0"),
-		FunctionARN:        failedValue,
-		FunctionRequestId:  failedValue,
-	}
-	functionArn := ctx.Value(functionArnContextKey)
-	if functionArn != nil {
-		lambdaContext.FunctionARN = functionArn.(string)
-	}
-	functionRequestId := ctx.Value(functionRequestIdContextKey)
-	if functionRequestId != nil {
-		lambdaContext.FunctionRequestId = functionRequestId.(string)
-	}
-	return lambdaContext
 }
 
 func newConfig(logConfig *types.LogConfig) *types.LogConfig {

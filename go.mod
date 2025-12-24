@@ -2,7 +2,10 @@ module github.com/suctl/aws-powertools-lambda-go
 
 go 1.25.0
 
-require github.com/rs/zerolog v1.34.0
+require (
+	github.com/aws/aws-lambda-go v1.51.1
+	github.com/rs/zerolog v1.34.0
+)
 
 require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
