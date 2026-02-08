@@ -1,4 +1,4 @@
-name: Makefile CI
+name: pipeline
 
 on:
   push:
