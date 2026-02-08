@@ -2,6 +2,7 @@ package metric
 
 import (
 	"github.com/suctl/aws-powertools-lambda-go/internal/utils"
+	"github.com/suctl/aws-powertools-lambda-go/metric/provider/cloudwatchemf"
 )
 
 type MetricInterface interface {

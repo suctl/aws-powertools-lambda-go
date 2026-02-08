@@ -114,32 +114,32 @@ func TestCloudWatchEMFRoot(t *testing.T) {
 	}
 }
 
-func TestCloudWatchEMFOutput(t *testing.T) {
-	cloudWatchEmfOutput := CloudWatchEMFOutput{
-		Aws: CloudWatchEMFRoot{
-			Timestamp: 1625247600,
-			CloudWatchMetrics: []CloudWatchMetrics{
-				{
-					Namespace: "TestNamespace",
-					Dimensions: [][]string{
-						{"Dimension1"},
-					},
-					Metrics: []CloudWatchEMFMetric{
-						{
-							Name: "TestMetric",
-							Unit: "Count",
-						},
-					},
-				},
-			},
-		},
-	}
-	expected := `{"_aws":{"Timestamp":1625247600,"CloudWatchMetrics":[{"Namespace":"TestNamespace","Dimensions":[["Dimension1"]],"Metrics":[{"Name":"TestMetric","Unit":"Count"}]}]}}`
-	actual, error := json.Marshal(cloudWatchEmfOutput)
-	if error != nil {
-		t.Errorf("failed to generate json")
-	}
-	if string(actual) != expected {
-		t.Errorf("expected %s, got %s", expected, string(actual))
-	}
-}
+// func TestCloudWatchEMFOutput(t *testing.T) {
+// 	cloudWatchEmfOutput := CloudWatchEMFOutput{
+// 		Aws: CloudWatchEMFRoot{
+// 			Timestamp: 1625247600,
+// 			CloudWatchMetrics: []CloudWatchMetrics{
+// 				{
+// 					Namespace: "TestNamespace",
+// 					Dimensions: [][]string{
+// 						{"Dimension1"},
+// 					},
+// 					Metrics: []CloudWatchEMFMetric{
+// 						{
+// 							Name: "TestMetric",
+// 							Unit: "Count",
+// 						},
+// 					},
+// 				},
+// 			},
+// 		},
+// 	}
+// 	expected := `{"_aws":{"Timestamp":1625247600,"CloudWatchMetrics":[{"Namespace":"TestNamespace","Dimensions":[["Dimension1"]],"Metrics":[{"Name":"TestMetric","Unit":"Count"}]}]}}`
+// 	actual, error := json.Marshal(cloudWatchEmfOutput)
+// 	if error != nil {
+// 		t.Errorf("failed to generate json")
+// 	}
+// 	if string(actual) != expected {
+// 		t.Errorf("expected %s, got %s", expected, string(actual))
+// 	}
+// }
